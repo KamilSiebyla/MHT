@@ -1,4 +1,7 @@
 ﻿@page "/"
+@using Microsoft.Graph;
+
+@inject Infrastructure.Factories.GraphClientFactory graphClientFactory
 
 <div class="p-5 mb-4 bg-light rounded-3">
     <div class="container-fluid py-5">
@@ -7,6 +10,7 @@
             <Authorized>
                 <h4>Welcome @context?.User?.Identity?.Name</h4>
                 <p>Use the navigation bar on the left to get started.</p>
+                <h4>Welcome from GRAPH by display name: @currentUser.DisplayName</h4>
             </Authorized>
             <NotAuthorized>
                 <a class="btn btn-primary btn-large" href="authentication/login">Click here to sign in</a>
@@ -14,3 +18,40 @@
         </AuthorizeView>
     </div>
 </div>
+
+@code{
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private User currentUser = new User();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationStateTask == null)
+        {
+            throw new AuthenticationException(new Error
+                {
+                    Message = "Unable to access authentication state"
+                });
+        }
+
+        var user = (await authenticationStateTask).User;
+
+        var grapClient = graphClientFactory.GetAuthenticatedClient();
+        
+        try
+        {
+            currentUser = await grapClient
+                .Me
+                .Request()
+                .Select(u => new
+                {
+                    u.DisplayName
+                })
+                .GetAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error when fetcing user data: { ex.Message }");
+        }
+    }
+}

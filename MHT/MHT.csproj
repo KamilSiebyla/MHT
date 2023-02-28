@@ -13,8 +13,4 @@
     <PackageReference Include="Microsoft.Graph" Version="4.54.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Infrastructure\Interfaces\" />
-  </ItemGroup>
-
 </Project>

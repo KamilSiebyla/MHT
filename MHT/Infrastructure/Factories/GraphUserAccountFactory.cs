@@ -1,4 +1,4 @@
-﻿using Infrastructure.Services;
+﻿using MHT.Infrastructure.Factories;
 using MHT.Infrastructure.Providers;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication.Internal;
@@ -9,11 +9,11 @@ namespace Infrastructure.Factories
     public class GraphUserAccountFactory : AccountClaimsPrincipalFactory<RemoteUserAccount>
     {
         private readonly IAccessTokenProviderAccessor accessor;
-        private readonly GraphClientService clientService;
+        private readonly GraphClientFactory clientService;
         private readonly ILogger<GraphUserAccountFactory> logger;
 
         public GraphUserAccountFactory(IAccessTokenProviderAccessor accessor,
-            GraphClientService clientService,
+            GraphClientFactory clientService,
             ILogger<GraphUserAccountFactory> logger)
         : base(accessor)
         {
