@@ -1,9 +1,57 @@
 ﻿@page "/"
+@using Microsoft.Graph;
 
-<PageTitle>Index</PageTitle>
+@inject Infrastructure.Factories.GraphClientFactory graphClientFactory
 
-<h1>Hello, world!</h1>
+<div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+        <h1>MHT START PAGE!</h1>
+        <AuthorizeView>
+            <Authorized>
+                <h4>Welcome from GRAPH by display name: @currentUser.DisplayName</h4>
+            </Authorized>
+            <NotAuthorized>
+                <a class="btn btn-primary btn-large" href="authentication/login">Click here to sign in</a>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
 
-Welcome to your new app.
+@code{
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private User currentUser = new User();
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationStateTask == null)
+        {
+            throw new AuthenticationException(new Error
+                {
+                    Message = "Unable to access authentication state"
+                });
+        }
+
+        var user = (await authenticationStateTask).User;
+        var grapClient = graphClientFactory.GetAuthenticatedClient();
+        
+        // GET /users/{id | userPrincipalName} //
+        // GET /users/{id | userPrincipalName}/calendar/events -> need to take outlook.timezone into account //
+
+        try
+        {
+            currentUser = await grapClient
+                .Me
+                .Request()
+                .Select(u => new
+                {
+                    u.DisplayName
+                })
+                .GetAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error when fetcing user data: { ex.Message }");
+        }
+    }
+}
