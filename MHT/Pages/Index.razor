@@ -8,8 +8,6 @@
         <h1>MHT START PAGE!</h1>
         <AuthorizeView>
             <Authorized>
-                <h4>Welcome @context?.User?.Identity?.Name</h4>
-                <p>Use the navigation bar on the left to get started.</p>
                 <h4>Welcome from GRAPH by display name: @currentUser.DisplayName</h4>
             </Authorized>
             <NotAuthorized>
@@ -35,9 +33,11 @@
         }
 
         var user = (await authenticationStateTask).User;
-
         var grapClient = graphClientFactory.GetAuthenticatedClient();
         
+        // GET /users/{id | userPrincipalName} //
+        // GET /users/{id | userPrincipalName}/calendar/events -> need to take outlook.timezone into account //
+
         try
         {
             currentUser = await grapClient
