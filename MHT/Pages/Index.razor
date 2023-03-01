@@ -27,8 +27,6 @@
                             <tr>
                                 <td>@calendarEvent.Organizer.EmailAddress.Name</td>
                                 <td>@calendarEvent.Subject</td>
-                                <td>@FormatIso8601DateTime(calendarEvent.Start.DateTime)</td>
-                                <td>@FormatIso8601DateTime(calendarEvent.End.DateTime)</td>
                             </tr>
                         }
                     </tbody>
@@ -61,11 +59,12 @@
 
         var user = (await authenticationStateTask).User;
         var graphTimeZone = user.GetUserGraphTimeZone();
-        
+
         dateTimeFormat = $"{user.GetUserGraphDateFormat()} {user.GetUserGraphTimeFormat()}";
 
-        var startOfWeek = GetUtcStartOfWeekInTimeZone(DateTime.Today, graphTimeZone);
+        //var startOfWeek = GetUtcStartOfWeekInTimeZone(DateTime.Today, graphTimeZone);
 
+        var startOfWeek = DateTime.Today;
         var endOfWeek = startOfWeek.AddDays(7);
 
         var graphClient = graphClientFactory.GetAuthenticatedClient();
@@ -100,8 +99,8 @@
              var eventPage = await graphClient.Me
             .CalendarView
             .Request(viewOptions)
-            .Header("Prefer", $"outlook.timezone=\"{graphTimeZone}\"")
-            .Top(50)
+            //.Header("Prefer", $"outlook.timezone=\"{graphTimeZone}\"")
+            .Top(10)
             .Select(e => new
             {
                 e.Subject,
@@ -120,26 +119,26 @@
         }
     }
 
-    private DateTime GetUtcStartOfWeekInTimeZone(DateTime today, string timeZoneId)
-    {
-        TimeZoneInfo userTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
+    //private DateTime GetUtcStartOfWeekInTimeZone(DateTime today, string timeZoneId)
+    //{
+    //    TimeZoneInfo userTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
 
-        int diff = System.DayOfWeek.Sunday - today.DayOfWeek;
+    //    int diff = System.DayOfWeek.Sunday - today.DayOfWeek;
 
-        var unspecifiedStart = DateTime.SpecifyKind(today.AddDays(diff), DateTimeKind.Unspecified);
+    //    var unspecifiedStart = DateTime.SpecifyKind(today.AddDays(diff), DateTimeKind.Unspecified);
 
-        return TimeZoneInfo.ConvertTimeToUtc(unspecifiedStart, userTimeZone);
-    }
+    //    return TimeZoneInfo.ConvertTimeToUtc(unspecifiedStart, userTimeZone);
+    //}
 
-    private string FormatIso8601DateTime(string iso8601DateTime)
-    {
-        var dateTime = DateTime.Parse(iso8601DateTime);
+    //private string FormatIso8601DateTime(string iso8601DateTime)
+    //{
+    //    var dateTime = DateTime.Parse(iso8601DateTime);
 
-        if (!string.IsNullOrWhiteSpace(dateTimeFormat))
-        {
-            return dateTime.ToString(dateTimeFormat);
-        }
+    //    if (!string.IsNullOrWhiteSpace(dateTimeFormat))
+    //    {
+    //        return dateTime.ToString(dateTimeFormat);
+    //    }
 
-        return iso8601DateTime;
-    }
+    //    return iso8601DateTime;
+    //}
 }
