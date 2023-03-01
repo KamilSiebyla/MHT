@@ -1,5 +1,8 @@
 ﻿@page "/"
+
 @using Microsoft.Graph;
+@using MHT.Infrastructure.Providers;
+@using TimeZoneConverter;
 
 @inject Infrastructure.Factories.GraphClientFactory graphClientFactory
 
@@ -9,6 +12,28 @@
         <AuthorizeView>
             <Authorized>
                 <h4>Welcome from GRAPH by display name: @currentUser.DisplayName</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Organizer</th>
+                            <th>Subject</th>
+                            <th>Start</th>
+                            <th>End</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var calendarEvent in events)
+                        {
+                            <tr>
+                                <td>@calendarEvent.Organizer.EmailAddress.Name</td>
+                                <td>@calendarEvent.Subject</td>
+                                <td>@FormatIso8601DateTime(calendarEvent.Start.DateTime)</td>
+                                <td>@FormatIso8601DateTime(calendarEvent.End.DateTime)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
             </Authorized>
             <NotAuthorized>
                 <a class="btn btn-primary btn-large" href="authentication/login">Click here to sign in</a>
@@ -20,7 +45,9 @@
 @code{
     [CascadingParameter]
     private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private IList<Event> events = new List<Event>();
     private User currentUser = new User();
+    private string? dateTimeFormat;
 
     protected override async Task OnInitializedAsync()
     {
@@ -33,14 +60,18 @@
         }
 
         var user = (await authenticationStateTask).User;
-        var grapClient = graphClientFactory.GetAuthenticatedClient();
+        var graphTimeZone = user.GetUserGraphTimeZone();
         
-        // GET /users/{id | userPrincipalName} //
-        // GET /users/{id | userPrincipalName}/calendar/events -> need to take outlook.timezone into account //
+        dateTimeFormat = $"{user.GetUserGraphDateFormat()} {user.GetUserGraphTimeFormat()}";
+
+        var startOfWeek = GetUtcStartOfWeekInTimeZone(DateTime.Today, graphTimeZone);
+        var endOfWeek = startOfWeek.AddDays(7);
+
+        var graphClient = graphClientFactory.GetAuthenticatedClient();
 
         try
         {
-            currentUser = await grapClient
+            currentUser = await graphClient
                 .Me
                 .Request()
                 .Select(u => new
@@ -51,7 +82,63 @@
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error when fetcing user data: { ex.Message }");
+            throw new Exception($"Error when fetcing user data: {ex.Message}");
         }
+
+        var viewOptions = new List<QueryOption>
+        {
+            new QueryOption("startDateTime", startOfWeek.ToString("o")),
+            new QueryOption("endDateTime", endOfWeek.ToString("o"))
+        };
+
+        // GET /users/{id | userPrincipalName} //
+        // GET /users/{id | userPrincipalName}/calendar/events -> need to take outlook.timezone into account //
+
+        try
+        {
+             var eventPage = await graphClient.Me
+            .CalendarView
+            .Request(viewOptions)
+            .Header("Prefer", $"outlook.timezone=\"{graphTimeZone}\"")
+            .Top(50)
+            .Select(e => new
+            {
+                e.Subject,
+                e.Organizer,
+                e.Start,
+                e.End
+            })
+            .OrderBy("start/dateTime")
+            .GetAsync();
+
+            events = eventPage.CurrentPage;
+        }
+        catch(Exception ex)
+        {
+            throw new Exception($"Error when fetchin events: { ex.Message }");
+        }
+    }
+
+    private DateTime GetUtcStartOfWeekInTimeZone(DateTime today, string timeZoneId)
+    {
+        TimeZoneInfo userTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
+
+        int diff = System.DayOfWeek.Sunday - today.DayOfWeek;
+
+        var unspecifiedStart = DateTime.SpecifyKind(today.AddDays(diff), DateTimeKind.Unspecified);
+
+        return TimeZoneInfo.ConvertTimeToUtc(unspecifiedStart, userTimeZone);
+    }
+
+    private string FormatIso8601DateTime(string iso8601DateTime)
+    {
+        var dateTime = DateTime.Parse(iso8601DateTime);
+
+        if (!string.IsNullOrWhiteSpace(dateTimeFormat))
+        {
+            return dateTime.ToString(dateTimeFormat);
+        }
+
+        return iso8601DateTime;
     }
 }
