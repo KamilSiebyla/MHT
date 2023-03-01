@@ -65,6 +65,7 @@
         dateTimeFormat = $"{user.GetUserGraphDateFormat()} {user.GetUserGraphTimeFormat()}";
 
         var startOfWeek = GetUtcStartOfWeekInTimeZone(DateTime.Today, graphTimeZone);
+
         var endOfWeek = startOfWeek.AddDays(7);
 
         var graphClient = graphClientFactory.GetAuthenticatedClient();
@@ -115,7 +116,7 @@
         }
         catch(Exception ex)
         {
-            throw new Exception($"Error when fetchin events: { ex.Message }");
+            throw new Exception($"Error when fetching events: { ex.Message }");
         }
     }
 
