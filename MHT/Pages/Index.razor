@@ -15,16 +15,18 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Organizer</th>
                             <th>Subject</th>
+                            <th>Start</th>
+                            <th>End</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var calendarEvent in events)
                         {
                             <tr>
-                                <td>@calendarEvent.Organizer.EmailAddress.Name</td>
                                 <td>@calendarEvent.Subject</td>
+                                <td>@calendarEvent.Start.DateTime</td>
+                                <td>@calendarEvent.End.DateTime</td>
                             </tr>
                         }
                     </tbody>
@@ -41,7 +43,27 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? authenticationStateTask { get; set; }
-    private IList<Event> events = new List<Event>();
+    private IList<Event> events = new List<Event>
+    {
+        new Event
+        {
+            Subject = "Team meeting",
+            Start = new DateTimeTimeZone { DateTime = DateTime.Now.AddHours(1).ToString("s"), TimeZone = "UTC" },
+            End = new DateTimeTimeZone { DateTime = DateTime.Now.AddHours(2).ToString("s"), TimeZone = "UTC" },
+        },
+        new Event
+        {
+            Subject = "Lunch with John",
+            Start = new DateTimeTimeZone { DateTime = DateTime.Now.AddHours(3).ToString("s"), TimeZone = "UTC" },
+            End = new DateTimeTimeZone { DateTime = DateTime.Now.AddHours(5).ToString("s"), TimeZone = "UTC" },
+        },
+        new Event
+        {
+            Subject = "Architects stand-up",
+            Start = new DateTimeTimeZone { DateTime = DateTime.Now.AddHours(5).ToString("s"), TimeZone = "UTC" },
+            End = new DateTimeTimeZone { DateTime = DateTime.Now.AddHours(8).ToString("s"), TimeZone = "UTC" },
+        }
+    };
     private User currentUser = new User();
 
     protected override async Task OnInitializedAsync()
@@ -56,6 +78,15 @@
 
         var user = (await authenticationStateTask).User;
         var graphClient = graphClientFactory.GetAuthenticatedClient();
+
+        var startOfWeek = DateTime.Today;
+        var endOfWeek = startOfWeek.AddDays(7);
+
+        var viewOptions = new List<QueryOption>
+        {
+            new QueryOption("startDateTime", startOfWeek.ToString("o")),
+            new QueryOption("endDateTime", endOfWeek.ToString("o"))
+        };
 
         try
         {
@@ -73,28 +104,21 @@
             throw new Exception($"Error when fetcing user data: {ex.Message}");
         }
 
-        var startOfWeek = DateTime.Today;
-        var endOfWeek = startOfWeek.AddDays(7);
-
-        var viewOptions = new List<QueryOption>
-        {
-            new QueryOption("startDateTime", startOfWeek.ToString("o")),
-            new QueryOption("endDateTime", endOfWeek.ToString("o"))
-        };
-
         try
         {
-            var eventPage = await graphClient.Me.CalendarView
-            .Request(viewOptions)
-            .Select(e => new
-            {
-                e.Subject,
-                e.Organizer
-            })
-            .OrderBy("start/dateTime")
-           .GetAsync();
+            //var eventPage = await graphClient
+            //.Me
+            //.CalendarView
+            //.Request(viewOptions)
+            //.Select(e => new
+            //{
+            //    e.Subject,
+            //    e.Organizer
+            //})
+            //.OrderBy("start/dateTime")
+            //.GetAsync();
 
-            events = eventPage.CurrentPage;
+            //events = eventPage.CurrentPage;
         }
         catch (Exception ex)
         {
