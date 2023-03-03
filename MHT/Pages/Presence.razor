@@ -1,0 +1,104 @@
+﻿@page "/presence"
+
+@using Microsoft.Graph;
+@using MHT.Infrastructure.Providers;
+@using TimeZoneConverter;
+
+@inject Infrastructure.Factories.GraphClientFactory graphClientFactory
+
+<div class="p-5 mb-4 bg-light rounded-3">
+    <div class="w-100 p-3 container-fluid py-5">
+        <AuthorizeView>
+            <Authorized>
+                <div class="w-100 p-3 bg-light">
+                    <div class="form-inline">
+                        <input class="w-50 p-3 mr-sm-2" placeholder="Search coworker" aria-label="Search" @bind-value="@searchTerm">
+                        <button class="w-25 p-3 btn btn-outline-success my-2 my-sm-0" @onclick="@SearchCoworker">Find</button>
+                    </div>
+                </div>
+
+                @if (coworkers == null)
+                {
+                    // Here will be some kid of loading screen //
+                }
+                else
+                {
+                    <div class="container">
+                        <div class="row">
+                            @foreach (var coworker in coworkers)
+                            {
+                                <div class="col-sm">
+                                    <div class="card" style="width: 18rem;">
+                                        <img class="card-img-top" src="https://ostatniatawerna.pl/wp-content/uploads/fly-images/96620/Witcher-Geralt-730x452-c.jpg" alt="@coworker.DisplayName">
+                                        <div class="card-body">
+                                            <h5 class="card-title">@coworker.DisplayName</h5>
+                                            <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                                        </div>
+                                        <div class="card-body">
+                                            <a href="#" class="w-30 btn btn-primary">Teams message</a>
+                                            <a href="#" class="w-30 btn btn-primary">E-mail</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                     </div>
+                }
+            </Authorized>
+            <NotAuthorized>
+                <div class="d-flex justify-content-center">
+                    <a class="btn btn-primary btn-large" href="authentication/login">Click here to sign in</a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private IGraphServiceUsersCollectionPage? coworkers;
+    private User currentUser = new User();
+    private string? searchTerm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationStateTask == null)
+        {
+            throw new AuthenticationException(new Error
+                {
+                    Message = "Unable to access authentication state"
+                });
+        }
+
+        var user = (await authenticationStateTask).User;
+        var graphClient = graphClientFactory.GetAuthenticatedClient();
+
+        try
+        {
+            currentUser = await graphClient
+                .Me
+                .Request()
+                .Select(u => new
+                {
+                    u.DisplayName
+                })
+                .GetAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error when getting user data: {ex.Message}");
+        }
+    }
+
+    private async Task SearchCoworker()
+    {
+        var graphClient = graphClientFactory.GetAuthenticatedClient();
+
+        coworkers = await graphClient
+            .Users
+            .Request()
+            .Filter($"displayName eq '{searchTerm}' or surname eq '{searchTerm}'")
+            .GetAsync();
+    }
+}

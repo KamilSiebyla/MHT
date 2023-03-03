@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <Folder Include="Infrastructure\Helpers\" />
+    <Folder Include="Infrastructure\Services\" />
   </ItemGroup>
 
 </Project>
