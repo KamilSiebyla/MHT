@@ -6,43 +6,67 @@
 
 @inject Infrastructure.Factories.GraphClientFactory graphClientFactory
 
-<div class="p-5 mb-4 bg-light rounded-3">
-    <div class="w-100 p-3 container-fluid py-5">
+<div class="p-5 mb-4 rounded-3">
+    <div class="container-fluid py-5">
         <AuthorizeView>
+
             <Authorized>
-                <div class="w-100 p-3 bg-light">
+                <div class="w-100 p-3">
                     <div class="form-inline">
-                        <input class="w-50 p-3 mr-sm-2" placeholder="Search coworker" aria-label="Search" @bind-value="@searchTerm">
-                        <button class="w-25 p-3 btn btn-outline-success my-2 my-sm-0" @onclick="@SearchCoworker">Find</button>
+                        <input class="w-75 ml-2 p-3 my-2 my-sm-0" placeholder="Search coworker" aria-label="Search" @bind-value="@searchTerm">
+                        <button class="w-15 p-3 btn btn-outline-success my-2 my-sm-0" @onclick="@SearchCoworker">
+                            Find coworker free time slots
+                        </button>
                     </div>
                 </div>
 
-                @if (coworkers == null)
+                @if (coworkers == null || coworkers.Count == 0)
                 {
-                    // Here will be some kid of loading screen //
+                    <div class="card border-info w-auto mt-xl-5">
+                        <h5 class="card-header">Information</h5>
+                        <div class="card-body">
+                            <p class="card-text">
+                                There is nothing to show. Please make sure you have used proper coworker data to search.
+                                If you are searching for the first time, plese provide surname or display name of the coworker
+                                you want to talk with.
+                            </p>
+                        </div>
+                    </div>
                 }
                 else
                 {
-                    <div class="container">
-                        <div class="row">
+                    <section class="vh-100">
+                        <div class="container py-5 h-100">
                             @foreach (var coworker in coworkers)
                             {
-                                <div class="col-sm">
-                                    <div class="card" style="width: 18rem;">
-                                        <img class="card-img-top" src="https://ostatniatawerna.pl/wp-content/uploads/fly-images/96620/Witcher-Geralt-730x452-c.jpg" alt="@coworker.DisplayName">
-                                        <div class="card-body">
-                                            <h5 class="card-title">@coworker.DisplayName</h5>
-                                            <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                                <div class="row d-flex justify-content-center align-items-center h-100">
+                                    <div class="col-md-12 col-xl-4">
+
+                                        <div class="card @ResolvePresence(@coworker)" style="border-radius: 15px;">
+                                            <div class="card-body text-center">
+                                                <div class="mt-3 mb-4">
+                                                    <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava2-bg.webp"
+                                                         class="rounded-circle img-fluid" style="width: 100px;" />
+                                                </div>
+                                                <h4 class="mb-2">@coworker.DisplayName</h4>
+                                                <p class="text-muted mb-3">@coworker.JobTitle</p>
+                                                <p class="text-muted mb-4">
+                                                    Phone: <a href="#!">@coworker.BusinessPhones.FirstOrDefault()</a>
+                                                </p>
+                                                <button type="button" class="btn btn-primary btn-rounded btn-lg">
+                                                    Teams
+                                                </button>
+                                                <button type="button" class="btn btn-primary btn-rounded btn-lg">
+                                                    Outlook
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="card-body">
-                                            <a href="#" class="w-30 btn btn-primary">Teams message</a>
-                                            <a href="#" class="w-30 btn btn-primary">E-mail</a>
-                                        </div>
+
                                     </div>
                                 </div>
                             }
                         </div>
-                     </div>
+                    </section>
                 }
             </Authorized>
             <NotAuthorized>
@@ -57,9 +81,12 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? authenticationStateTask { get; set; }
-    private IGraphServiceUsersCollectionPage? coworkers;
+    private GraphServiceClient? graphClient;
     private User currentUser = new User();
-    private string? searchTerm;
+    private IGraphServiceUsersCollectionPage? coworkers;
+
+    private string? searchTerm = string.Empty;
+    private string? activityClass = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -71,8 +98,8 @@
                 });
         }
 
+        graphClient = graphClientFactory.GetAuthenticatedClient();
         var user = (await authenticationStateTask).User;
-        var graphClient = graphClientFactory.GetAuthenticatedClient();
 
         try
         {
@@ -93,12 +120,119 @@
 
     private async Task SearchCoworker()
     {
-        var graphClient = graphClientFactory.GetAuthenticatedClient();
+        if (graphClient == null) return;
 
-        coworkers = await graphClient
-            .Users
-            .Request()
-            .Filter($"displayName eq '{searchTerm}' or surname eq '{searchTerm}'")
-            .GetAsync();
+        try
+        {
+            coworkers = await graphClient
+                .Users
+                .Request()
+                .Select(c => new
+                {
+                    c.DisplayName,
+                    c.BusinessPhones,
+                    c.JobTitle,
+                    c.Id
+                })
+                .Filter("displayName eq '{searchTerm}' or surname eq '{searchTerm}'")
+                .GetAsync();
+
+            await AssignPresenceToUsers(coworkers);
+            await AssignCalendarEventsToUsers(coworkers);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error when fetching users by search term: {ex.Message}");
+        }
+    }
+
+    private async Task AssignPresenceToUsers(IGraphServiceUsersCollectionPage coworkers)
+    {
+        foreach (var coworker in coworkers)
+        {
+            try
+            {
+                var presence = await graphClient
+                .Users[coworker.Id]
+                .Presence
+                .Request()
+                .GetAsync();
+
+                coworker.Presence = presence;
+            }
+            catch(Exception ex)
+            {
+                throw new Exception($"Error when fetching presence: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task AssignCalendarEventsToUsers(IGraphServiceUsersCollectionPage coworkers)
+    {
+        foreach (var coworker in coworkers)
+        {
+            var startOfWeek = DateTime.Today;
+            var endOfWeek = startOfWeek.AddDays(7);
+
+            var viewOptions = new List<QueryOption>
+            {
+                new QueryOption("startDateTime", startOfWeek.ToString("o")),
+                new QueryOption("endDateTime", endOfWeek.ToString("o"))
+            };
+
+            try
+            {
+                var eventPage = await graphClient
+                .Users[coworker.Id]
+                .CalendarView
+                .Request(viewOptions)
+                .Select(e => new
+                {
+                    e.Subject,
+                    e.Organizer,
+                    e.Start,
+                    e.End
+                })
+                .OrderBy("start/dateTime")
+                .GetAsync();
+
+                coworker.CalendarView = eventPage;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error when fetching events: {ex.Message}");
+            }
+        }
+    }
+
+    private string ResolvePresence(User user)
+    {
+        /*The supplemental information to a user's availability. 
+          Possible values are Available, Away, BeRightBack, Busy, DoNotDisturb, InACall, 
+          InAConferenceCall, Inactive, InAMeeting, Offline, OffWork, OutOfOffice, 
+          PresenceUnknown, Presenting, UrgentInterruptionsOnly.*/
+        switch (user.Presence.Activity)
+        {
+            case "Offline":
+                {
+                    return "border-light";
+                }
+            case "Online":
+                {
+                    return "border-green";
+                }
+            case "Busy":
+                {
+                    return "border-error";
+                }
+            case "BeRightBack":
+                {
+                    return "border-warning";
+                }
+            default:
+                {
+                    return string.Empty;
+                }
+        }
     }
 }

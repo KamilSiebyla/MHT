@@ -6,33 +6,40 @@
 
 @inject Infrastructure.Factories.GraphClientFactory graphClientFactory
 
-<div class="p-5 mb-4 bg-light rounded-3">
+<div class="p-5 mb-4 rounded-3">
     <div class="container-fluid py-5">
         <AuthorizeView>
             <Authorized>
-                <h4>Welcome: @currentUser.DisplayName</h4>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col">Organizer</th>
-                            <th scope="col">Subject</th>
-                            <th scope="col">Start time</th>
-                            <th scope="col">End time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var calendarEvent in events)
-                        {
+                @if (events == null || events.Count == 0)
+                {
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border" role="status"></div>
+                    </div>
+                }
+                else
+                {
+                    <table class="table table-striped">
+                        <thead>
                             <tr>
-                                <td>@calendarEvent.Organizer.EmailAddress.Name</td>
-                                <td>@calendarEvent.Subject</td>
-                                <td>@FormatIso8601DateTime(calendarEvent.Start.DateTime)</td>
-                                <td>@FormatIso8601DateTime(calendarEvent.End.DateTime)</td>
+                                <th scope="col">Organizer</th>
+                                <th scope="col">Subject</th>
+                                <th scope="col">Start time</th>
+                                <th scope="col">End time</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
-
+                        </thead>
+                        <tbody>
+                            @foreach (var calendarEvent in events)
+                            {
+                                <tr>
+                                    <td>@calendarEvent.Organizer.EmailAddress.Name</td>
+                                    <td>@calendarEvent.Subject</td>
+                                    <td>@calendarEvent.Start.DateTime</td>
+                                    <td>@calendarEvent.End.DateTime</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
             </Authorized>
             <NotAuthorized>
                 <div class="d-flex justify-content-center">
@@ -46,8 +53,9 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? authenticationStateTask { get; set; }
-    private IList<Event> events = new List<Event>();
+    private GraphServiceClient? graphClient;
     private User currentUser = new User();
+    private IList<Event> events = new List<Event>();
     private string? dateTimeFormat;
 
     protected override async Task OnInitializedAsync()
@@ -60,13 +68,13 @@
                 });
         }
 
+        graphClient = graphClientFactory.GetAuthenticatedClient();
         var user = (await authenticationStateTask).User;
-        var graphClient = graphClientFactory.GetAuthenticatedClient();
 
         var graphTimeZone = user.GetUserGraphTimeZone();
         dateTimeFormat = $"{user.GetUserGraphDateFormat()} {user.GetUserGraphTimeFormat()}";
 
-        var startOfWeek = GetUtcStartOfWeekInTimeZone(DateTime.Today, graphTimeZone);
+        var startOfWeek = DateTime.Today;
         var endOfWeek = startOfWeek.AddDays(7);
 
         var viewOptions = new List<QueryOption>
@@ -115,28 +123,5 @@
         {
             throw new Exception($"Error when fetching events: {ex.Message}");
         }
-    }
-
-    private DateTime GetUtcStartOfWeekInTimeZone(DateTime today, string timeZoneId)
-    {
-        TimeZoneInfo userTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
-
-        int diff = System.DayOfWeek.Sunday - today.DayOfWeek;
-
-        var unspecifiedStart = DateTime.SpecifyKind(today.AddDays(diff), DateTimeKind.Unspecified);
-
-        return TimeZoneInfo.ConvertTimeToUtc(unspecifiedStart, userTimeZone);
-    }
-
-    private string FormatIso8601DateTime(string iso8601DateTime)
-    {
-        var dateTime = DateTime.Parse(iso8601DateTime);
-
-        if (!string.IsNullOrWhiteSpace(dateTimeFormat))
-        {
-            return dateTime.ToString(dateTimeFormat);
-        }
-
-        return iso8601DateTime;
     }
 }
