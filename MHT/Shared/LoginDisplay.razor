@@ -6,7 +6,8 @@
 
 <AuthorizeView>
     <Authorized>
-        Hello, @context.User.Identity?.Name!
+        Logged in as, @context.User.Identity?.Name!
+        <button class="nav-link btn btn-link" @onclick="NavigateToPresenceSearch">Check presence</button>
         <button class="nav-link btn btn-link" @onclick="BeginLogout">Log out</button>
     </Authorized>
     <NotAuthorized>
@@ -19,5 +20,10 @@
     {
         await SignOutManager.SetSignOutState();
         Navigation.NavigateTo("authentication/logout");
+    }
+
+    private void NavigateToPresenceSearch()
+    {
+        Navigation.NavigateTo("/presence");
     }
 }
