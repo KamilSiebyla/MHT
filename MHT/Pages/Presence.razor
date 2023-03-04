@@ -134,7 +134,7 @@
                     c.JobTitle,
                     c.Id
                 })
-                .Filter("displayName eq '{searchTerm}' or surname eq '{searchTerm}'")
+                .Filter($"displayName eq '{searchTerm}' or surname eq '{searchTerm}'")
                 .GetAsync();
 
             await AssignPresenceToUsers(coworkers);
