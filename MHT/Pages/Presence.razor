@@ -108,8 +108,7 @@
                 .Request()
                 .Select(u => new
                 {
-                    u.DisplayName,
-                    u.Chats
+                    u.DisplayName
                 })
                 .GetAsync();
         }
@@ -128,21 +127,19 @@
             coworkers = await graphClient
                 .Users
                 .Request()
-                .Select(c => new
+                .Select(u => new
                 {
-                    c.DisplayName,
-                    c.BusinessPhones,
-                    c.JobTitle,
-                    c.Mail,
-                    c.Chats,
-                    c.Presence,
-                    c.Id
+                    u.DisplayName,
+                    u.BusinessPhones,
+                    u.JobTitle,
+                    u.Mail,
+                    u.Id
                 })
-                .Filter($"displayName eq '{searchTerm}' or surname eq '{searchTerm}'")
+                .Filter($"startswith(displayName, '{searchTerm}') or startswith(surname, '{searchTerm}')")
                 .GetAsync();
 
             await AssignPresenceToUsers(coworkers);
-            //await AssignCalendarEventsToUsers(coworkers);
+            await AssignCalendarEventsToUsers(coworkers);
         }
         catch (Exception ex)
         {
@@ -164,7 +161,7 @@
 
                 coworker.Presence = presence;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new Exception($"Error when fetching presence: {ex.Message}");
             }
@@ -205,7 +202,7 @@
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error when fetching events: {ex.Message}");
+                return;
             }
         }
     }
@@ -218,34 +215,36 @@
             .Me
             .Chats
             .Request()
+            .Expand("members")
+            .Select(c => new
+            {
+                c.Id,
+                c.Topic,
+                c.ChatType,
+                c.LastUpdatedDateTime,
+                c.Members
+            })
             .GetAsync();
 
-        var coworkerChats = await graphClient
-            .Users[coworker.Id]
-            .Chats
-            .Request()
-            .GetAsync();
+        var chat = userChats.FirstOrDefault(
+            c => c.Members.Any(
+                u => u.DisplayName == coworker.DisplayName));
 
-        var message = new ChatMessage
+        if (chat != null)
         {
-            Body = new ItemBody
-            {
-                Content = "Hello, this is a test message!"
-            }
-        };
-
-        foreach (var currentUserChat in userChats)
-        {
-            foreach (var coworkerChat in coworkerChats)
-            {
-                if (currentUserChat.Id == coworkerChat.Id)
+            var message = new ChatMessage
                 {
-                    await graphClient.Me.Chats[coworkerChat.Id]
+                    Body = new ItemBody
+                    {
+                        // TODO: Need to place it in the CONSTS //
+                        Content = "Hello, do you have a minute by chance?"
+                    }
+                };
+
+            await graphClient.Me.Chats[chat.Id]
                         .Messages
                         .Request()
                         .AddAsync(message);
-                }
-            }
         }
     }
 

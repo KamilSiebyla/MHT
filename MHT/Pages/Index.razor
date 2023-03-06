@@ -28,7 +28,7 @@
                                             <div class="card-body text-center">
                                                 <h5 class="mb-2">@calendarEvent.Subject</h5>
                                                 <p class="text-muted fs-6 mb-2">Organizer: @calendarEvent.Organizer.EmailAddress.Name</p>
-                                                <p class="text-muted fs-6 mb-2">Hours: @FormatDate(@calendarEvent.Start.DateTime) - @FormatDate(@calendarEvent.End.DateTime)</p>
+                                                <p class="text-muted fw-bold fs-6 mb-2">Hours: @FormatDate(@calendarEvent.Start.DateTime) - @FormatDate(@calendarEvent.End.DateTime)</p>
                                                 <p class="text-muted fs-6 mb-2">Timezone: @calendarEvent.Start.TimeZone</p>
                                                 <div class="list-group">
                                                     @if (!calendarEvent.Attendees.Any())
