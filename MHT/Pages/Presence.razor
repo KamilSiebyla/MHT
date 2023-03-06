@@ -53,10 +53,10 @@
                                                 <p class="text-muted mb-4">
                                                     Phone: <a href="#!">@coworker.BusinessPhones.FirstOrDefault()</a>
                                                 </p>
-                                                <button type="button" class="btn btn-primary btn-rounded btn-lg">
+                                                <button @onclick="@(() => SendTeamsMessage(coworker))" type="button" class="btn btn-primary btn-rounded btn-lg">
                                                     Teams
                                                 </button>
-                                                <button type="button" class="btn btn-primary btn-rounded btn-lg">
+                                                <button @onclick="@(() => SendOutlookMessage(coworker))" type="button" class="btn btn-primary btn-rounded btn-lg">
                                                     Outlook
                                                 </button>
                                             </div>
@@ -108,7 +108,8 @@
                 .Request()
                 .Select(u => new
                 {
-                    u.DisplayName
+                    u.DisplayName,
+                    u.Chats
                 })
                 .GetAsync();
         }
@@ -132,6 +133,9 @@
                     c.DisplayName,
                     c.BusinessPhones,
                     c.JobTitle,
+                    c.Mail,
+                    c.Chats,
+                    c.Presence,
                     c.Id
                 })
                 .Filter($"displayName eq '{searchTerm}' or surname eq '{searchTerm}'")
@@ -204,6 +208,78 @@
                 throw new Exception($"Error when fetching events: {ex.Message}");
             }
         }
+    }
+
+    private async Task SendTeamsMessage(User coworker)
+    {
+        if (graphClient == null) return;
+
+        var userChats = await graphClient
+            .Me
+            .Chats
+            .Request()
+            .GetAsync();
+
+        var coworkerChats = await graphClient
+            .Users[coworker.Id]
+            .Chats
+            .Request()
+            .GetAsync();
+
+        var message = new ChatMessage
+        {
+            Body = new ItemBody
+            {
+                Content = "Hello, this is a test message!"
+            }
+        };
+
+        foreach (var currentUserChat in userChats)
+        {
+            foreach (var coworkerChat in coworkerChats)
+            {
+                if (currentUserChat.Id == coworkerChat.Id)
+                {
+                    await graphClient.Me.Chats[coworkerChat.Id]
+                        .Messages
+                        .Request()
+                        .AddAsync(message);
+                }
+            }
+        }
+    }
+
+    private async Task SendOutlookMessage(User coworker)
+    {
+        if (graphClient == null) return;
+
+        var message = new Message
+            {
+                ToRecipients = new List<Recipient>
+                {
+                    new Recipient
+                    {
+                        EmailAddress = new EmailAddress
+                        {
+                            Address = coworker.Mail
+                        }
+                    }
+                },
+                // TODO: Here should use some CONSTS //
+                Subject = "Quick thing to discuss.",
+                Body = new ItemBody
+                {
+                    // TODO: Here should use some CONSTS //
+                    Content = "Hello, do you have a minute? I would be glad.",
+                    ContentType = BodyType.Html
+                },
+            };
+
+        await graphClient
+            .Me
+            .SendMail(message, true)
+            .Request()
+            .PostAsync();
     }
 
     private string ResolvePresence(User user)
