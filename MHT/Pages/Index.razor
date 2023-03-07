@@ -2,6 +2,7 @@
 
 @using Microsoft.Graph;
 @using MHT.Infrastructure.Providers;
+@using MHT.Common.Helpers;
 @using TimeZoneConverter;
 
 @inject Infrastructure.Factories.GraphClientFactory graphClientFactory
@@ -24,11 +25,13 @@
                                 @foreach (var calendarEvent in events)
                                 {
                                     <div class="col-md-12 col-xl-4 mb-2">
-                                        <div class="card border-5 @ResolveEventsBorder(calendarEvent.Start.DateTime)" style="border-radius: 15px; min-height: 600px;">
+                                        <div class="card border-5 @StylingHelper.ResolveEventsBorder(calendarEvent.Start.DateTime)" style="border-radius: 15px; min-height: 600px;">
                                             <div class="card-body text-center">
                                                 <h5 class="mb-2">@calendarEvent.Subject</h5>
                                                 <p class="text-muted fs-6 mb-2">Organizer: @calendarEvent.Organizer.EmailAddress.Name</p>
-                                                <p class="text-muted fs-6 mb-2">Hours: @FormatDate(@calendarEvent.Start.DateTime) - @FormatDate(@calendarEvent.End.DateTime)</p>
+                                                <p class="text-muted fs-6 mb-2 border-2">
+                                                    Hours: @DateHelper.FormatDate(@calendarEvent.Start.DateTime) - @DateHelper.FormatDate(@calendarEvent.End.DateTime)
+                                                </p>
                                                 <p class="text-muted fs-6 mb-2">Timezone: @calendarEvent.Start.TimeZone</p>
                                                 <div class="list-group">
                                                     @if (!calendarEvent.Attendees.Any())
@@ -49,7 +52,9 @@
                                                         {
                                                             <div class="border-2 list-group-item mb-1 rounded">
                                                                 <div class="d-flex align-items-center">
-                                                                    <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava2-bg.webp" class="rounded-circle me-3" style="width: 50px;">
+                                                                    <img 
+                                                                        src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava2-bg.webp" 
+                                                                        class="rounded-circle me-3" style="width: 50px;">
                                                                     <div>
                                                                         <p class="text-muted fs-6 mb-0">Name: @attendee.EmailAddress.Name</p>
                                                                         <p class="text-muted fs-6 mb-0">Type: @attendee.Type.Value.ToString()</p>
@@ -151,31 +156,6 @@
         catch (Exception ex)
         {
             throw new Exception($"Error when fetching events: {ex.Message}");
-        }
-    }
-
-    private string FormatDate(string dateAsString)
-    {
-        DateTime date = DateTime.Parse(dateAsString);
-        string formattedDate = date.ToString("dd-MM-yyyy:HH:mm");
-        return formattedDate;
-    }
-
-    private string ResolveEventsBorder(string startDateAsString)
-    {
-        double timeDiff = (DateTime.Parse(startDateAsString) - DateTime.Now).TotalDays;
-
-        if (timeDiff < 1)
-        {
-            return "border-danger";
-        }
-        else if (timeDiff >= 1 && timeDiff <= 2)
-        {
-            return "border-warning";
-        }
-        else
-        {
-            return "border-success";
         }
     }
 }

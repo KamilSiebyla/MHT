@@ -2,6 +2,7 @@
 
 @using Microsoft.Graph;
 @using MHT.Infrastructure.Providers;
+@using MHT.Common.Helpers;
 @using TimeZoneConverter;
 
 @inject Infrastructure.Factories.GraphClientFactory graphClientFactory
@@ -42,7 +43,7 @@
                                 <div class="row d-flex justify-content-center align-items-center h-100">
                                     <div class="col-md-12 col-xl-4">
 
-                                        <div class="card border-5 @ResolvePresence(@coworker)" style="border-radius: 15px;">
+                                        <div class="card border-5 @PresenceHelper.ResolvePresence(@coworker)" style="border-radius: 15px;">
                                             <div class="card-body text-center">
                                                 <div class="mt-3 mb-4">
                                                     <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava2-bg.webp"
@@ -52,6 +53,15 @@
                                                 <p class="text-muted mb-3">@coworker.JobTitle</p>
                                                 <p class="text-muted mb-4">
                                                     Phone: <a href="#!">@coworker.BusinessPhones.FirstOrDefault()</a>
+                                                </p>
+                                                <p class="text-muted border-2 mb-4">
+                                                    Will be busy:
+                                                    @foreach (var @coworkerEvent in @coworker.Calendar.Events)
+                                                    {
+                                                        <p class="text-muted mb-4 w-100">
+                                                            @DateHelper.FormatDate(@coworkerEvent.Start.DateTime) - @DateHelper.FormatDate(@coworkerEvent.End.DateTime)
+                                                        </p>
+                                                    }
                                                 </p>
                                                 <button type="button" class="btn btn-primary btn-rounded btn-lg">
                                                     Teams
@@ -132,13 +142,14 @@
                     c.DisplayName,
                     c.BusinessPhones,
                     c.JobTitle,
+                    c.Department,
                     c.Id
                 })
                 .Filter($"displayName eq '{searchTerm}' or surname eq '{searchTerm}'")
                 .GetAsync();
 
             await AssignPresenceToUsers(coworkers);
-            //await AssignCalendarEventsToUsers(coworkers);
+            await AssignCalendarEventsToUsers(coworkers);
         }
         catch (Exception ex)
         {
@@ -160,7 +171,7 @@
 
                 coworker.Presence = presence;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new Exception($"Error when fetching presence: {ex.Message}");
             }
@@ -171,80 +182,11 @@
     {
         foreach (var coworker in coworkers)
         {
-            var startOfWeek = DateTime.Today;
-            var endOfWeek = startOfWeek.AddDays(7);
-
-            var viewOptions = new List<QueryOption>
-            {
-                new QueryOption("startDateTime", startOfWeek.ToString("o")),
-                new QueryOption("endDateTime", endOfWeek.ToString("o"))
-            };
-
-            try
-            {
-                var eventPage = await graphClient
-                .Users[coworker.Id]
-                .CalendarView
-                .Request(viewOptions)
-                .Select(e => new
-                {
-                    e.Subject,
-                    e.Organizer,
-                    e.Attendees,
-                    e.Start,
-                    e.End
-                })
-                .OrderBy("start/dateTime")
-                .GetAsync();
-
-                coworker.CalendarView = eventPage;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error when fetching events: {ex.Message}");
-            }
+            var calendar =  CalendarHelper.PopulateCalendarIfEpmty();
+            coworker.Calendar = calendar;
         }
-    }
 
-    private string ResolvePresence(User user)
-    {
-        switch (user.Presence.Activity)
-        {
-            case "Offline":
-            case "Inactive":
-            case "PresenceUnknown":
-                {
-                    return "border-gray";
-                }
-            case "Online":
-            case "Available":
-                {
-                    return "border-success";
-                }
-            case "Busy":
-            case "InACall":
-            case "InAConferenceCall":
-            case "InAMeeting":
-            case "DoNotDisturb":
-            case "Presenting":
-            case "UrgentInterruptionsOnly":
-                {
-                    return "border-danger";
-                }
-            case "BeRightBack":
-            case "Away":
-                {
-                    return "border-warning";
-                }
-            case "OutOfOffice":
-            case "OffWork":
-                {
-                    return "border-purple";
-                }
-            default:
-                {
-                    return string.Empty;
-                }
-        }
+        // Need to stay like that, because we are mocking data as for now //
+        await Task.CompletedTask;
     }
 }
