@@ -1,9 +1,11 @@
 using MHT;
 using Infrastructure.Factories;
-using MHT.Infrastructure.Factories;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MHT.Infrastructure.Services;
+using Microsoft.Graph;
+using GraphClientFactory = MHT.Infrastructure.Factories.GraphClientFactory;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -31,5 +33,11 @@ builder.Services.AddMsalAuthentication<RemoteAuthenticationState, RemoteUserAcco
 .AddAccountClaimsPrincipalFactory<RemoteAuthenticationState, RemoteUserAccount, GraphUserAccountFactory>();
 
 builder.Services.AddScoped<GraphClientFactory>();
+builder.Services.AddScoped<GraphServiceClient>();
+
+builder.Services.AddTransient<CalendarService>();
+builder.Services.AddTransient<CustomMessageService>();
+builder.Services.AddTransient<PresenceService>();
+builder.Services.AddTransient<UserService>();
 
 await builder.Build().RunAsync();

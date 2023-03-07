@@ -1,11 +1,14 @@
 ﻿@page "/presence"
 
+@using MHT.Infrastructure.Interfaces;
+@using MHT.Infrastructure.Services;
 @using Microsoft.Graph;
 @using MHT.Infrastructure.Providers;
 @using MHT.Common.Helpers;
 @using TimeZoneConverter;
 
 @inject Infrastructure.Factories.GraphClientFactory graphClientFactory
+@inject Infrastructure.Services.CustomMessageService customMessageService
 
 <div class="p-5 mb-4 rounded-3">
     <div class="container-fluid py-5">
@@ -91,8 +94,9 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? authenticationStateTask { get; set; }
-    private GraphServiceClient? graphClient;
     private User currentUser = new User();
+    private GraphServiceClient? graphClient;
+
     private IGraphServiceUsersCollectionPage? coworkers;
 
     private string? searchTerm = string.Empty;
@@ -109,6 +113,8 @@
         }
 
         graphClient = graphClientFactory.GetAuthenticatedClient();
+        customMessageService = new CustomMessageService(graphClient);
+
         var user = (await authenticationStateTask).User;
 
         try
@@ -178,78 +184,18 @@
         }
     }
 
-    private async Task SendTeamsMessage(User coworker)
+    public async Task SendTeamsMessage(User coworker)
     {
-        if (graphClient == null) return;
+        if (customMessageService == null) return;
 
-        var userChats = await graphClient
-            .Me
-            .Chats
-            .Request()
-            .Expand("members")
-            .Select(c => new
-            {
-                c.Id,
-                c.Topic,
-                c.ChatType,
-                c.LastUpdatedDateTime,
-                c.Members
-            })
-            .GetAsync();
-
-        var chat = userChats.FirstOrDefault(
-            c => c.Members.Any(
-                u => u.DisplayName == coworker.DisplayName));
-
-        if (chat != null)
-        {
-            var message = new ChatMessage
-                {
-                    Body = new ItemBody
-                    {
-                        // TODO: Need to place it in the CONSTS //
-                        Content = "Hello, do you have a minute by chance?"
-                    }
-                };
-
-            await graphClient.Me.Chats[chat.Id]
-                        .Messages
-                        .Request()
-                        .AddAsync(message);
-        }
+        await customMessageService.SendTeamsMessage(coworker);
     }
 
-    private async Task SendOutlookMessage(User coworker)
+    public async Task SendOutlookMessage(User coworker)
     {
-        if (graphClient == null) return;
+        if (customMessageService == null) return;
 
-        var message = new Message
-            {
-                ToRecipients = new List<Recipient>
-                {
-                    new Recipient
-                    {
-                        EmailAddress = new EmailAddress
-                        {
-                            Address = coworker.Mail
-                        }
-                    }
-                },
-                // TODO: Here should use some CONSTS //
-                Subject = "Quick thing to discuss.",
-                Body = new ItemBody
-                {
-                    // TODO: Here should use some CONSTS //
-                    Content = "Hello, do you have a minute? I would be glad.",
-                    ContentType = BodyType.Html
-                },
-            };
-
-        await graphClient
-            .Me
-            .SendMail(message, true)
-            .Request()
-            .PostAsync();
+        await customMessageService.SendOutlookMessage(coworker);
     }
 
     private async Task AssignCalendarEventsToUsers(IGraphServiceUsersCollectionPage coworkers)
