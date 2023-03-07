@@ -1,11 +1,17 @@
 ﻿@page "/presence"
 
+@using MHT.Infrastructure.Interfaces;
+@using MHT.Infrastructure.Services;
 @using Microsoft.Graph;
 @using MHT.Infrastructure.Providers;
 @using MHT.Common.Helpers;
 @using TimeZoneConverter;
 
 @inject Infrastructure.Factories.GraphClientFactory graphClientFactory
+@inject Infrastructure.Services.CustomMessageService customMessageService
+@inject Infrastructure.Services.UserService userService
+@inject Infrastructure.Services.PresenceService presenceService
+@inject Infrastructure.Services.CalendarService calendarService
 
 <div class="p-5 mb-4 rounded-3">
     <div class="container-fluid py-5">
@@ -91,8 +97,9 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? authenticationStateTask { get; set; }
-    private GraphServiceClient? graphClient;
     private User currentUser = new User();
+    private GraphServiceClient? graphClient;
+
     private IGraphServiceUsersCollectionPage? coworkers;
 
     private string? searchTerm = string.Empty;
@@ -109,158 +116,67 @@
         }
 
         graphClient = graphClientFactory.GetAuthenticatedClient();
+
+        customMessageService = new CustomMessageService(graphClient);
+        userService = new UserService(graphClient);
+        calendarService = new CalendarService(graphClient);
+        presenceService = new PresenceService(graphClient);
+
         var user = (await authenticationStateTask).User;
 
-        try
-        {
-            currentUser = await graphClient
-                .Me
-                .Request()
-                .Select(u => new
-                {
-                    u.DisplayName
-                })
-                .GetAsync();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error when getting user data: {ex.Message}");
-        }
+        var fetchedUser = await userService.GetCurrentUserAsync();
+
+        if (fetchedUser != null)
+            currentUser = fetchedUser;
     }
 
     private async Task SearchCoworker()
     {
-        if (graphClient == null) return;
+        if (userService == null) return;
 
-        try
+        coworkers = await userService.SearchCoworkerAsync(
+            searchTerm != null ? searchTerm : string.Empty
+        );
+
+        if (coworkers != null)
         {
-            coworkers = await graphClient
-                .Users
-                .Request()
-                .Select(u => new
-                {
-                    u.DisplayName,
-                    u.BusinessPhones,
-                    u.JobTitle,
-                    u.Mail,
-                    u.Id
-                })
-                .Filter($"startswith(displayName, '{searchTerm}') or startswith(surname, '{searchTerm}')")
-                .GetAsync();
-
             await AssignPresenceToUsers(coworkers);
             await AssignCalendarEventsToUsers(coworkers);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error when fetching users by search term: {ex.Message}");
         }
     }
 
     private async Task AssignPresenceToUsers(IGraphServiceUsersCollectionPage coworkers)
     {
+        if (presenceService == null) return;
+
         foreach (var coworker in coworkers)
         {
-            try
-            {
-                var presence = await graphClient
-                .Users[coworker.Id]
-                .Presence
-                .Request()
-                .GetAsync();
-
-                coworker.Presence = presence;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error when fetching presence: {ex.Message}");
-            }
+            var presence = await presenceService.AssignPresenceToUserAsync(coworker);
+            coworker.Presence = presence;
         }
     }
 
-    private async Task SendTeamsMessage(User coworker)
+    public async Task SendTeamsMessage(User coworker)
     {
-        if (graphClient == null) return;
+        if (customMessageService == null) return;
 
-        var userChats = await graphClient
-            .Me
-            .Chats
-            .Request()
-            .Expand("members")
-            .Select(c => new
-            {
-                c.Id,
-                c.Topic,
-                c.ChatType,
-                c.LastUpdatedDateTime,
-                c.Members
-            })
-            .GetAsync();
-
-        var chat = userChats.FirstOrDefault(
-            c => c.Members.Any(
-                u => u.DisplayName == coworker.DisplayName));
-
-        if (chat != null)
-        {
-            var message = new ChatMessage
-                {
-                    Body = new ItemBody
-                    {
-                        // TODO: Need to place it in the CONSTS //
-                        Content = "Hello, do you have a minute by chance?"
-                    }
-                };
-
-            await graphClient.Me.Chats[chat.Id]
-                        .Messages
-                        .Request()
-                        .AddAsync(message);
-        }
+        await customMessageService.SendTeamsMessageAsync(coworker);
     }
 
-    private async Task SendOutlookMessage(User coworker)
+    public async Task SendOutlookMessage(User coworker)
     {
-        if (graphClient == null) return;
+        if (customMessageService == null) return;
 
-        var message = new Message
-            {
-                ToRecipients = new List<Recipient>
-                {
-                    new Recipient
-                    {
-                        EmailAddress = new EmailAddress
-                        {
-                            Address = coworker.Mail
-                        }
-                    }
-                },
-                // TODO: Here should use some CONSTS //
-                Subject = "Quick thing to discuss.",
-                Body = new ItemBody
-                {
-                    // TODO: Here should use some CONSTS //
-                    Content = "Hello, do you have a minute? I would be glad.",
-                    ContentType = BodyType.Html
-                },
-            };
-
-        await graphClient
-            .Me
-            .SendMail(message, true)
-            .Request()
-            .PostAsync();
+        await customMessageService.SendOutlookMessageAsync(coworker);
     }
 
     private async Task AssignCalendarEventsToUsers(IGraphServiceUsersCollectionPage coworkers)
     {
+        // Need to stay like that, because we are mocking data as for now //
         foreach (var coworker in coworkers)
         {
-            var calendar =  CalendarHelper.PopulateCalendarIfEpmty();
+            var calendar = await calendarService.AssignCalendarEventsToUserAsync(coworker);
             coworker.Calendar = calendar;
         }
-
-        // Need to stay like that, because we are mocking data as for now //
-        await Task.CompletedTask;
     }
 }
