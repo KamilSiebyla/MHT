@@ -1,5 +1,5 @@
-﻿using MHT.Infrastructure.Interfaces;
-using Microsoft.Graph;
+﻿using Microsoft.Graph;
+using MHT.Infrastructure.Interfaces;
 
 namespace MHT.Infrastructure.Services
 {
@@ -12,7 +12,7 @@ namespace MHT.Infrastructure.Services
             _graphClient = graphClient;
         }
 
-        public async Task SendTeamsMessage(User coworker)
+        public async Task SendTeamsMessageAsync(User coworker)
         {
             if (_graphClient == null) return;
 
@@ -60,7 +60,7 @@ namespace MHT.Infrastructure.Services
             }
         }
 
-        public async Task SendOutlookMessage(User coworker)
+        public async Task SendOutlookMessageAsync(User coworker)
         {
             if (_graphClient == null) return;
 

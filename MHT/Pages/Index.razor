@@ -1,11 +1,14 @@
 ﻿@page "/"
 
+@using MHT.Infrastructure.Services;
 @using Microsoft.Graph;
 @using MHT.Infrastructure.Providers;
 @using MHT.Common.Helpers;
 @using TimeZoneConverter;
 
 @inject Infrastructure.Factories.GraphClientFactory graphClientFactory
+@inject Infrastructure.Services.UserService userService
+@inject Infrastructure.Services.CalendarService calendarService
 
 <div class="p-5 mb-4 rounded-3">
     <div class="container-fluid py-5">
@@ -89,7 +92,6 @@
     private GraphServiceClient? graphClient;
     private User currentUser = new User();
     private IList<Event> events = new List<Event>();
-    private string? dateTimeFormat;
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,60 +104,23 @@
         }
 
         graphClient = graphClientFactory.GetAuthenticatedClient();
+
+        userService = new UserService(graphClient);
+        calendarService = new CalendarService(graphClient);
+
         var user = (await authenticationStateTask).User;
 
-        var graphTimeZone = user.GetUserGraphTimeZone();
-        dateTimeFormat = $"{user.GetUserGraphDateFormat()} {user.GetUserGraphTimeFormat()}";
+        var fetchedUser = await userService.GetCurrentUserAsync();
 
-        var startOfWeek = DateTime.Today;
-        var endOfWeek = startOfWeek.AddDays(7);
+        if (fetchedUser != null)
+            currentUser = fetchedUser;
 
-        var viewOptions = new List<QueryOption>
-        {
-            new QueryOption("startDateTime", startOfWeek.ToString("o")),
-            new QueryOption("endDateTime", endOfWeek.ToString("o"))
-        };
+        var fetchedEvents = await calendarService
+            .GetCurrentUserCalendarForNextWeek(
+                user.GetUserGraphTimeZone(), QueryOptionsHelper.BuildStartEndDatesFilterQueryForCalendar()
+            );
 
-        try
-        {
-            currentUser = await graphClient
-                .Me
-                .Request()
-                .Select(u => new
-                {
-                    u.DisplayName
-                })
-                .GetAsync();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error when getting user data: {ex.Message}");
-        }
-
-        try
-        {
-            var eventPage = await graphClient
-            .Me
-            .CalendarView
-            .Request(viewOptions)
-            .Header("Prefer", $"outlook.timezone=\"{graphTimeZone}\"")
-            .Top(50)
-            .Select(e => new
-            {
-                e.Subject,
-                e.Organizer,
-                e.Attendees,
-                e.Start,
-                e.End
-            })
-            .OrderBy("start/dateTime")
-            .GetAsync();
-
-            events = eventPage.CurrentPage;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error when fetching events: {ex.Message}");
-        }
+        if (fetchedEvents != null)
+            events = fetchedEvents;
     }
 }

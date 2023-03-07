@@ -4,8 +4,8 @@ namespace MHT.Infrastructure.Interfaces
 {
     public interface ICustomMessageService
     {
-        public Task SendTeamsMessage(User coworker);
+        public Task SendTeamsMessageAsync(User coworker);
 
-        public Task SendOutlookMessage(User coworker);
+        public Task SendOutlookMessageAsync(User coworker);
     }
 }
