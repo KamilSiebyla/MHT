@@ -1,5 +1,6 @@
 ﻿using Microsoft.Graph;
 using MHT.Infrastructure.Interfaces;
+using MHT.Common.Constants;
 
 namespace MHT.Infrastructure.Services
 {
@@ -43,8 +44,7 @@ namespace MHT.Infrastructure.Services
                     {
                         Body = new ItemBody
                         {
-                            // TODO: Need to place it in the CONSTS //
-                            Content = "Hello, do you have a minute by chance?"
+                            Content = TextStrings.Teams.TEAMS_MESSAGE_CONTENT
                         }
                     };
 
@@ -79,11 +79,11 @@ namespace MHT.Infrastructure.Services
                     }
                 },
                     // TODO: Here should use some CONSTS //
-                    Subject = "Quick thing to discuss.",
+                    Subject = TextStrings.Mail.MAIL_SUBJECT,
                     Body = new ItemBody
                     {
                         // TODO: Here should use some CONSTS //
-                        Content = "Hello, do you have a minute? I would be glad.",
+                        Content = TextStrings.Mail.MAIL_CONTENT,
                         ContentType = BodyType.Html
                     },
                 };
