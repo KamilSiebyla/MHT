@@ -178,6 +178,80 @@
         }
     }
 
+    private async Task SendTeamsMessage(User coworker)
+    {
+        if (graphClient == null) return;
+
+        var userChats = await graphClient
+            .Me
+            .Chats
+            .Request()
+            .Expand("members")
+            .Select(c => new
+            {
+                c.Id,
+                c.Topic,
+                c.ChatType,
+                c.LastUpdatedDateTime,
+                c.Members
+            })
+            .GetAsync();
+
+        var chat = userChats.FirstOrDefault(
+            c => c.Members.Any(
+                u => u.DisplayName == coworker.DisplayName));
+
+        if (chat != null)
+        {
+            var message = new ChatMessage
+                {
+                    Body = new ItemBody
+                    {
+                        // TODO: Need to place it in the CONSTS //
+                        Content = "Hello, do you have a minute by chance?"
+                    }
+                };
+
+            await graphClient.Me.Chats[chat.Id]
+                        .Messages
+                        .Request()
+                        .AddAsync(message);
+        }
+    }
+
+    private async Task SendOutlookMessage(User coworker)
+    {
+        if (graphClient == null) return;
+
+        var message = new Message
+            {
+                ToRecipients = new List<Recipient>
+                {
+                    new Recipient
+                    {
+                        EmailAddress = new EmailAddress
+                        {
+                            Address = coworker.Mail
+                        }
+                    }
+                },
+                // TODO: Here should use some CONSTS //
+                Subject = "Quick thing to discuss.",
+                Body = new ItemBody
+                {
+                    // TODO: Here should use some CONSTS //
+                    Content = "Hello, do you have a minute? I would be glad.",
+                    ContentType = BodyType.Html
+                },
+            };
+
+        await graphClient
+            .Me
+            .SendMail(message, true)
+            .Request()
+            .PostAsync();
+    }
+
     private async Task AssignCalendarEventsToUsers(IGraphServiceUsersCollectionPage coworkers)
     {
         foreach (var coworker in coworkers)
