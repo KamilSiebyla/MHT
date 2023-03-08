@@ -11,7 +11,7 @@
 I have created an application (for this event needs I am using .NET/Blazor) which will allow me to see instantly if person I am looking will be available soon - and if someone will be available I will show the time slots when there is possibility to reach out with option to quick message on Teams/E-mail with some simple message.
 
 ### Purpose
-Nowdays I am usually checking folks calendars and I am trying to see when they will be able to talk with me. It is usually time consuming I just wanted to have compact overview of my week and also ability to quickly check avaialabilty time slots of my collegues.
+Nowadays I am usually checking folks calendars and I am trying to see when they will be able to talk with me. It is usually time consuming I just wanted to have compact overview of my week and also ability to quickly check availability time slots of my colleges.
 
 ### Project structure
 Project structure is looking standard. There are few additional folders with business logic. Here is solution structure:
