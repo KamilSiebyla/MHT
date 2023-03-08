@@ -13,6 +13,15 @@ I have created an application (for this event needs I am using .NET/Blazor) whic
 ### Purpose
 Nowdays I am usually checking folks calendars and I am trying to see when they will be able to talk with me. It is usually time consuming I just wanted to have compact overview of my week and also ability to quickly check avaialabilty time slots of my collegues.
 
+### Project structure
+Project structure is looking standard. There are few additional folders with business logic. Here is solution structure:
+![alt text](https://github.com/KamilSiebyla/MHT/blob/4c38cbbafcb7ff5fc6efc9e3afa2308f060c1f74/MHT/wwwroot/flow_images/project_structure.png?raw=true)
+
+From SDK point of view most important are "Factories" and "Services" under "Infrastructure".
+
+### Branching strategy
+There is standard git flow implemented with RELEASE (will be created for first release), MASTER, DEVELOPEMENT and FEATURE branches. 
+
 ### Future plans
 My plan after this hack is to incorporate this feature to MS Teams in the end to actually use it on daily basis. 
 
