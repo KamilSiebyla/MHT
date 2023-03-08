@@ -1,6 +1,11 @@
 # MHT- Microsoft-Hack-Together
 
-[![Hack Together: Microsoft Graph and .NET](https://img.shields.io/badge/Microsoft%20-Hack--Together-orange?style=for-the-badge&logo=microsoft)](https://github.com/microsoft/hack-together)
+[![Hackathon][badge_hackathon]][link_hackathon]
+[![GitHub Actions][badge_actions]][link_actions] 
+[![GitHub Issues][badge_issues]][link_issues]
+[![GitHub Stars][badge_repo_stars]][link_repo]
+[![Repo Language][badge_language]][link_repo]
+[![Repo License][badge_license]][link_repo]
 
 ## Project Details
 
@@ -11,23 +16,6 @@ Nowdays I am usually checking folks calendars and I am trying to see when they w
 
 ### Future plans
 My plan after this hack is to incorporate this feature to MS Teams in the end to actually use it on daily basis. 
-
-# Microsoft Graph Meeting Scheduler
-
-[![Hackathon][badge_hackathon]][link_hackathon]
-[![GitHub Actions][badge_actions]][link_actions] 
-[![GitHub Issues][badge_issues]][link_issues]
-[![GitHub Stars][badge_repo_stars]][link_repo]
-[![Repo Language][badge_language]][link_repo]
-[![Repo License][badge_license]][link_repo]
-
-Once created, you will need a client secret for the application. This can be generated from the Azure Portal.
-
-Update the `local.settings.json` file with the following values:
-
-- `TenantId`: The tenant ID of the Azure AD tenant
-- `ClientId`: The client ID of the Azure AD application
-- `ClientSecret`: The client secret of the Azure AD application
 
 ## Author
 
