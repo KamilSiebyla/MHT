@@ -25,7 +25,7 @@ My plan after this hack is to incorporate this feature to MS Teams in the end to
 [badge_hackathon]: https://img.shields.io/badge/Microsoft%20-Hack--Together-orange?style=for-the-badge&logo=microsoft
 [link_hackathon]: https://github.com/microsoft/hack-together
 [link_linkedin]: https://www.linkedin.com/in/kamilsiebyla
-[badge_linkedin]: https://img.shields.io/badge/LinkedIn-jmcroft-blue?style=for-the-badge&logo=linkedin
+[badge_linkedin]: https://img.shields.io/badge/LinkedIn-KamilSiebyła-blue?style=for-the-badge&logo=linkedin
 [badge_language]: https://img.shields.io/badge/language-C%23-blue?style=for-the-badge
 [badge_license]: https://img.shields.io/github/license/KamilSiebyla/MHT?style=for-the-badge
 [badge_issues]: https://img.shields.io/github/issues/KamilSiebyla/MHT?style=for-the-badge
