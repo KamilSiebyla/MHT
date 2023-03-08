@@ -4,7 +4,7 @@
 [![GitHub Issues][badge_issues]][link_issues]
 [![GitHub Stars][badge_repo_stars]][link_repo]
 [![Repo Language][badge_language]][link_repo]
-[![Repo License][badge_license]][link_repo]
+[![Repo License][badge_license]][MIT]
 
 ## Project Details
 
