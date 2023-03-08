@@ -1,4 +1,4 @@
-# MHT- Microsoft-Hack-Together
+# MHT- MICROSOFT HACK TOGETHER
 
 [![Hackathon][badge_hackathon]][link_hackathon]
 [![GitHub Issues][badge_issues]][link_issues]
