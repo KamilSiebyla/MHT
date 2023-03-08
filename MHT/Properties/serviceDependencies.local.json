@@ -1,8 +1,10 @@
 {
   "dependencies": {
     "identityapp1": {
+      "secretStore": null,
+      "resourceId": null,
       "type": "identityapp.default",
-      "dynamicId": null
+      "connectionId": null
     }
   }
 }

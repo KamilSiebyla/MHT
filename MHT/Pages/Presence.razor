@@ -1,0 +1,183 @@
+﻿@page "/presence"
+
+@using Microsoft.Graph;
+@using TimeZoneConverter;
+@using MHT.Common.Helpers;
+@using MHT.Infrastructure.Services;
+@using MHT.Infrastructure.Providers;
+@using MHT.Infrastructure.Interfaces;
+
+
+
+@inject Infrastructure.Services.UserService userService
+@inject Infrastructure.Services.CalendarService calendarService
+@inject Infrastructure.Services.PresenceService presenceService
+@inject Infrastructure.Factories.GraphClientFactory graphClientFactory
+@inject Infrastructure.Services.CustomMessageService customMessageService
+
+<div class="p-5 mb-4 rounded-3">
+    <div class="container-fluid py-5">
+        <AuthorizeView>
+
+            <Authorized>
+                <div class="w-100 p-3">
+                    <div class="form-inline">
+                        <input class="w-75 ml-2 p-3 my-2 my-sm-0" placeholder="Search coworker" aria-label="Search" @bind-value="@searchTerm">
+                        <button class="w-15 p-3 btn btn-outline-success my-2 my-sm-0" @onclick="@SearchCoworker">
+                            Find coworker free time slots
+                        </button>
+                    </div>
+                </div>
+
+                @if (coworkers == null || coworkers.Count == 0)
+                {
+                    <div class="card border-info w-auto mt-xl-5">
+                        <h5 class="card-header">Information</h5>
+                        <div class="card-body">
+                            <p class="card-text">
+                                There is nothing to show. Please make sure you have used proper coworker data to search.
+                                If you are searching for the first time, plese provide surname or display name of the coworker
+                                you want to talk with.
+                            </p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <section class="vh-100">
+                        <div class="container py-5 h-100">
+                            @foreach (var coworker in coworkers)
+                            {
+                                <div class="row d-flex justify-content-center align-items-center mb-2">
+                                    <div class="col-md-6 col-xl-8">
+
+                                        <div class="card border-5 @PresenceHelper.ResolvePresence(@coworker) rounded-3">
+                                            <div class="card-body text-center">
+                                                <div class="mt-3 mb-4">
+                                                    <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava2-bg.webp"
+                                                         class="rounded-circle img-fluid" style="width: 100px"/>
+                                                </div>
+                                                <h4 class="mb-2">@coworker.DisplayName</h4>
+                                                <p class="text-muted mb-3">@coworker.JobTitle</p>
+                                                <p class="text-muted mb-4">
+                                                    Phone: <a href="#!">@coworker.BusinessPhones.FirstOrDefault()</a>
+                                                </p>
+                                                <p class="text-muted border rounded-2 p-3 mb-4">
+                                                    @foreach (var @coworkerEvent in @coworker.Calendar.Events)
+                                                    {
+                                                        <div class="text-muted p-1 w-100 fw-bolder">
+                                                            @DateHelper.FormatDate(@coworkerEvent.Start.DateTime) - @DateHelper.FormatDate(@coworkerEvent.End.DateTime)
+                                                        </div>
+                                                    }
+                                                </p>
+                                                <button @onclick="@(() => SendTeamsMessage(coworker))" type="button" class="btn btn-primary btn-rounded btn-lg">
+                                                    Teams
+                                                </button>
+                                                <button @onclick="@(() => SendOutlookMessage(coworker))" type="button" class="btn btn-primary btn-rounded btn-lg">
+                                                    Outlook
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </section>
+                }
+            </Authorized>
+            <NotAuthorized>
+                <div class="d-flex justify-content-center">
+                    <a class="btn btn-primary btn-large" href="authentication/login">Click here to sign in</a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private User currentUser = new User();
+    private GraphServiceClient? graphClient;
+
+    private IGraphServiceUsersCollectionPage? coworkers;
+
+    private string? searchTerm = string.Empty;
+    private string? activityClass = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationStateTask == null)
+        {
+            throw new AuthenticationException(new Error
+                {
+                    Message = "Unable to access authentication state"
+                });
+        }
+
+        graphClient = graphClientFactory.GetAuthenticatedClient();
+
+        customMessageService = new CustomMessageService(graphClient);
+        userService = new UserService(graphClient);
+        calendarService = new CalendarService(graphClient);
+        presenceService = new PresenceService(graphClient);
+
+        var user = (await authenticationStateTask).User;
+
+        var fetchedUser = await userService.GetCurrentUserAsync();
+
+        if (fetchedUser != null)
+            currentUser = fetchedUser;
+    }
+
+    private async Task SearchCoworker()
+    {
+        if (userService == null) return;
+
+        coworkers = await userService.SearchCoworkerAsync(
+            searchTerm != null ? searchTerm : string.Empty
+        );
+
+        if (coworkers != null)
+        {
+            await AssignPresenceToUsers(coworkers);
+            await AssignCalendarEventsToUsers(coworkers);
+        }
+    }
+
+    private async Task AssignPresenceToUsers(IGraphServiceUsersCollectionPage coworkers)
+    {
+        if (presenceService == null) return;
+
+        foreach (var coworker in coworkers)
+        {
+            var presence = await presenceService.AssignPresenceToUserAsync(coworker);
+            coworker.Presence = presence;
+        }
+    }
+
+    public async Task SendTeamsMessage(User coworker)
+    {
+        if (customMessageService == null) return;
+
+        await customMessageService.SendTeamsMessageAsync(coworker);
+    }
+
+    public async Task SendOutlookMessage(User coworker)
+    {
+        if (customMessageService == null) return;
+
+        await customMessageService.SendOutlookMessageAsync(coworker);
+    }
+
+    private async Task AssignCalendarEventsToUsers(IGraphServiceUsersCollectionPage coworkers)
+    {
+        // Need to stay like that, because we are mocking data as for now //
+        foreach (var coworker in coworkers)
+        {
+            var calendar = await calendarService.AssignCalendarEventsToUserAsync(coworker);
+            coworker.Calendar = calendar;
+        }
+    }
+}

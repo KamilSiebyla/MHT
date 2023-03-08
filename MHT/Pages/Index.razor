@@ -1,9 +1,127 @@
 ﻿@page "/"
 
-<PageTitle>Index</PageTitle>
+@using Microsoft.Graph;
+@using TimeZoneConverter;
+@using MHT.Common.Helpers;
+@using MHT.Infrastructure.Services;
+@using MHT.Infrastructure.Providers;
 
-<h1>Hello, world!</h1>
+@inject Infrastructure.Services.UserService userService
+@inject Infrastructure.Services.CalendarService calendarService
+@inject Infrastructure.Factories.GraphClientFactory graphClientFactory
 
-Welcome to your new app.
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+<div class="p-5 mb-4 rounded-3">
+    <div class="container-fluid py-5">
+        <AuthorizeView>
+            <Authorized>
+                @if (events == null || events.Count == 0)
+                {
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border" role="status"></div>
+                    </div>
+                }
+                else
+                {
+                    <section class="vh-50">
+                        <div class="container py-5 h-50">
+                            <div class="row">
+                                @foreach (var calendarEvent in events)
+                                {
+                                    <div class="col-md-12 col-xl-4 mb-2">
+                                        <div class="card border-5 @StylingHelper.ResolveEventsBorder(calendarEvent.Start.DateTime)" style="border-radius: 15px; min-height: 600px;">
+                                            <div class="card-body text-center">
+                                                <h5 class="mb-2">Topic: @calendarEvent.Subject</h5>
+                                                <p class="text-muted fs-6 mb-2">Organizer: @calendarEvent.Organizer.EmailAddress.Name</p>
+                                                <p class="text-muted fs-6 mb-2 border-2 fw-bolder">
+                                                    Date: @DateHelper.FormatDate(@calendarEvent.Start.DateTime) - @DateHelper.FormatDate(@calendarEvent.End.DateTime)
+                                                </p>
+                                                <p class="text-muted fs-6 mb-2">Timezone: @calendarEvent.Start.TimeZone</p>
+                                                <div class="list-group">
+                                                    @if (!calendarEvent.Attendees.Any())
+                                                    {
+                                                        <div class="card border-info w-auto mt-xl-5">
+                                                            <h5 class="card-header">Information</h5>
+                                                            <div class="card-body">
+                                                                <p class="card-text">
+                                                                    There is no participants in this meeting. It seems, that you are alone on this meeting.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <p class="text-muted fs-6 mb-2">Participants:</p>
+                                                        @foreach (var attendee in calendarEvent.Attendees)
+                                                        {
+                                                            <div class="border-2 list-group-item mb-2 rounded">
+                                                                <div class="d-flex align-items-center justify-content-start">
+                                                                    <img 
+                                                                        src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava2-bg.webp" 
+                                                                        class="rounded-circle me-3" style="width: 50px;">
+                                                                    <div class="pl-2">
+                                                                        <p class="text-muted fs-6 mb-0">Name: @attendee.EmailAddress.Name</p>
+                                                                        <p class="text-muted fs-6 mb-0">Type: @attendee.Type.Value.ToString()</p>
+                                                                        <p class="text-muted fs-6 mb-0 text-truncate">Response: @attendee.Status.Response.Value.ToString()</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </section>
+                }
+            </Authorized>
+            <NotAuthorized>
+                <div class="d-flex justify-content-center">
+                    <a class="btn btn-primary btn-large" href="authentication/login">Click here to sign in</a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationStateTask { get; set; }
+    private GraphServiceClient? graphClient;
+    private User currentUser = new User();
+    private IList<Event> events = new List<Event>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationStateTask == null)
+        {
+            throw new AuthenticationException(new Error
+                {
+                    Message = "Unable to access authentication state"
+                });
+        }
+
+        graphClient = graphClientFactory.GetAuthenticatedClient();
+
+        userService = new UserService(graphClient);
+        calendarService = new CalendarService(graphClient);
+
+        var user = (await authenticationStateTask).User;
+
+        var fetchedUser = await userService.GetCurrentUserAsync();
+
+        if (fetchedUser != null)
+            currentUser = fetchedUser;
+
+        var fetchedEvents = await calendarService
+            .GetCurrentUserCalendarForNextWeek(
+                user.GetUserGraphTimeZone(), QueryOptionsHelper.BuildStartEndDatesFilterQueryForCalendar()
+            );
+
+        if (fetchedEvents != null)
+            events = fetchedEvents;
+    }
+}
