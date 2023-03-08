@@ -23,7 +23,8 @@ namespace MHT.Infrastructure.Services
                     .Request()
                     .Select(u => new
                     {
-                        u.DisplayName
+                        u.DisplayName,
+                        u.Photo
                     })
                     .GetAsync();
             }
@@ -48,6 +49,7 @@ namespace MHT.Infrastructure.Services
                         u.BusinessPhones,
                         u.JobTitle,
                         u.Mail,
+                        u.Photo,
                         u.Id
                     })
                     .Filter($"startswith(displayName, '{ searchTerm }') or startswith(surname, '{ searchTerm }')")
