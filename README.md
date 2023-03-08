@@ -16,6 +16,11 @@ Nowdays I am usually checking folks calendars and I am trying to see when they w
 ### Future plans
 My plan after this hack is to incorporate this feature to MS Teams in the end to actually use it on daily basis. 
 
+### Flow description
+
+1. First thing user will see is login page: 
+![alt text](https://github.com/KamilSiebyla/MHT/blob/fa5b1db52f9fddc3fe390ffe62646caf5a6f39fc/MHT/wwwroot/flow_images/og_in_page.png?raw=true)
+
 ## Author
 
 👤 Kamil Siebyła
