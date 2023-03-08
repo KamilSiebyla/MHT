@@ -17,7 +17,7 @@ Nowdays I am usually checking folks calendars and I am trying to see when they w
 Project structure is looking standard. There are few additional folders with business logic. Here is solution structure:
 ![alt text](https://github.com/KamilSiebyla/MHT/blob/4c38cbbafcb7ff5fc6efc9e3afa2308f060c1f74/MHT/wwwroot/flow_images/project_structure.png?raw=true)
 
-From SDK point of view most important are "Factories" and "Services" under "Infrastructure".
+From SDK point of view most important are "Factories", "Providers" and "Services" under "Infrastructure".
 
 ### Branching strategy
 There is standard git flow implemented with RELEASE (will be created for first release), MASTER, DEVELOPEMENT and FEATURE branches. 
