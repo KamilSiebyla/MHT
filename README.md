@@ -16,7 +16,10 @@ Nowadays I am usually checking folks calendars and I am trying to see when they 
 ### Project structure
 Project structure is looking standard. There are few additional folders with business logic. Here is solution structure:
 <p align="center">
-![alt text](https://github.com/KamilSiebyla/MHT/blob/4c38cbbafcb7ff5fc6efc9e3afa2308f060c1f74/MHT/wwwroot/flow_images/project_structure.png?raw=true)
+<imghttps://github.com/KamilSiebyla/MHT/blob/4c38cbbafcb7ff5fc6efc9e3afa2308f060c1f74/MHT/wwwroot/flow_images/project_structure.png?raw=true)
+</p>
+<p align="center" width="100%">
+    <img width="33%" src="https://github.com/KamilSiebyla/MHT/blob/4c38cbbafcb7ff5fc6efc9e3afa2308f060c1f74/MHT/wwwroot/flow_images/project_structure.png?raw=true"> 
 </p>
 
 From SDK point of view most important are "Factories", "Providers" and "Services" under "Infrastructure".
