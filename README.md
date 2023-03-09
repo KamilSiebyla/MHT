@@ -75,7 +75,7 @@ Now, let's click "*Teams*" button and try to send message to active user:
     <img width="100%" src="https://github.com/KamilSiebyla/MHT/blob/11896ce7b10aa4d8cfbcfddb09a6a5f2c0c956d7/MHT/wwwroot/flow_images/7_send_teams_message_click.png?raw=true"> 
 </p>
 
-Results of sending teams message:
+Results of sending the message:
 
 <p align="center" width="100%">
     <img width="100%" src="https://github.com/KamilSiebyla/MHT/blob/11896ce7b10aa4d8cfbcfddb09a6a5f2c0c956d7/MHT/wwwroot/flow_images/9_success_message_to_pradeep.png?raw=true"> 
