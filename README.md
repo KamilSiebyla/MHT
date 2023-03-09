@@ -59,7 +59,7 @@ After clicking "Check presence" in the navbar, user will be moved to new page wi
     <img width="100%" src="https://github.com/KamilSiebyla/MHT/blob/11896ce7b10aa4d8cfbcfddb09a6a5f2c0c956d7/MHT/wwwroot/flow_images/5_search_coworkers_result.png?raw=true"> 
 </p>
 
-In this step, there is "Gu" in searchbox. What application is doing here - it is calling graph with search term to find people in logged-in user organization. Borders for users are suggesting, that they are offline. 
+In this step, there is "*Gu*" in searchbox. What application is doing here - it is calling graph with search term to find people in logged-in user organization. Borders for users are suggesting, that they are offline. 
 
 Below example of the same result after changing users statuses:
 
