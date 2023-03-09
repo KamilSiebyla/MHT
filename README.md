@@ -11,7 +11,7 @@
 I have created an application (for this event needs I am using .NET/Blazor) which will allow me to see instantly if person I am looking will be available soon - and if someone will be available I will show the time slots when there is possibility to reach out with option to quick message on Teams/E-mail with some simple message.
 
 ### Purpose
-Nowadays I am usually checking folks calendars and I am trying to see when they will be able to talk with me. It is usually time consuming I just wanted to have compact overview of my week and also ability to quickly check availability time slots of my colleges.
+Nowadays I am usually checking folks calendars and I am trying to see when they will be able to talk with me. It is usually time consuming. I just wanted to have compact overview of my week and also ability to quickly check availability of my colleges.
 
 ### Project structure
 Project structure is looking standard. There are few additional folders with business logic. Here is solution structure:
@@ -23,25 +23,25 @@ From SDK point of view most important are "Factories", "Providers" and "Services
 There is standard git flow implemented with RELEASE (will be created for first release), MASTER, DEVELOPEMENT and FEATURE branches. 
 
 ### Future plans
-My plan after this hack is to incorporate this feature to MS Teams in the end to actually use it on daily basis. 
+My plan after this hack is to incorporate this feature to the MS Teams in the end to actually use it on daily basis. 
 
 ### Flow description
 
 1. First thing user will see is login page: 
 ![alt text](https://github.com/KamilSiebyla/MHT/blob/fa5b1db52f9fddc3fe390ffe62646caf5a6f39fc/MHT/wwwroot/flow_images/og_in_page.png?raw=true)
 
-2. When log-in process will finish - user will see the view with upcoming meetings:
+2. When log-in process will be finised - user will see the view with upcoming meetings:
 ![alt text](https://github.com/KamilSiebyla/MHT/blob/11896ce7b10aa4d8cfbcfddb09a6a5f2c0c956d7/MHT/wwwroot/flow_images/3_incoming_events_in_app.png?raw=true)
 
-And here is screen dump from the outlook calendar - events are aligned: 
+And here is screen dump from the outlook calendar - events are aligned as it is shown: 
 ![alt text](https://github.com/KamilSiebyla/MHT/blob/11896ce7b10aa4d8cfbcfddb09a6a5f2c0c956d7/MHT/wwwroot/flow_images/2_calendar_outllok_after_login_page.png?raw=true)
 
-What is important here are borders for each event. There are three colors: 
+What is important here are borders for each event. There are three categories: 
 - RED: It means, that meeting will take place in less than one day; 
 - YELLOW: Meeting will take place beetwen tommorow or day after tommorw;
 - GREEN: Meeting will take place after more than two days;
 
-3. After clicking "Check presence" in navbar, user will be moved to new page with search:
+3. After clicking "Check presence" in the navbar, user will be moved to new page with search:
 ![alt text](https://github.com/KamilSiebyla/MHT/blob/11896ce7b10aa4d8cfbcfddb09a6a5f2c0c956d7/MHT/wwwroot/flow_images/5_search_coworkers_result.png?raw=true)
 
 In this step, there is "Gu" in searchbox. What application is doing here - it is calling graph with search term to find people in logged-in user organization. Borders for users are suggesting, that they are offline. 
