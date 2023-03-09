@@ -14,7 +14,7 @@ I have created an application (for this event needs I am using .NET/Blazor) whic
 Nowadays I am usually checking folks calendars and I am trying to see when they will be able to talk with me. It is usually time consuming. I just wanted to have compact overview of my week and also ability to quickly check availability of my colleges.
 
 ### Project structure
-Project structure is looking standard. There are few additional folders with business logic. Here is solution structure:
+Project structure is looking standard. There are few additional folders with business logic. Here is the solution structure:
 
 <p align="center" width="100%">
     <img width="100%" src="https://github.com/KamilSiebyla/MHT/blob/4c38cbbafcb7ff5fc6efc9e3afa2308f060c1f74/MHT/wwwroot/flow_images/project_structure.png?raw=true"> 
